@@ -1,11 +1,5 @@
 # LSTM_DEEP
-LSTM
 
+Dataset of Cryptocurrency
 
-#### Forecasting Methods ##########
-
-1. Time series 
-
-Links :
-
-https://www.datascience.com/blog/introduction-to-forecasting-with-arima-in-r-learn-data-science-tutorials
+This repository containf dataset required for Index fund.
