@@ -2,4 +2,4 @@
 
 Dataset of Cryptocurrency
 
-This repository containf dataset required for Index fund.
+This repository contain datasets required for Index fund.
