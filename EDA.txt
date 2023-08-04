@@ -1,0 +1,24 @@
+import pandas as pd
+import pandas_profiling as pp
+
+def advanced_eda(data_path):
+    # Load the data using pandas
+    df = pd.read_csv(data_path)
+
+    # Display basic information about the data
+    print("Data Info:")
+    print(df.info())
+
+    # Generate the pandas profiling report
+    profile = pp.ProfileReport(df, title="Pandas Profiling Report", explorative=True)
+
+    # Save the report as an HTML file
+    report_name = "data_eda_report.html"
+    profile.to_file(report_name)
+
+    # Display the report in the notebook (for Jupyter or Google Colab)
+    profile.to_widgets()
+
+if __name__ == "__main__":
+    data_path = "path_to_your_data.csv"  # Replace with the actual path to your data
+    advanced_eda(data_path)
