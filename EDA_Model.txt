@@ -1,0 +1,109 @@
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import LocalOutlierFactor
+
+def preprocess_data(data):
+    # Handle missing values
+    data = data.dropna()
+
+    # Handle infinity values (replace with a large finite value)
+    data = data.replace([np.inf, -np.inf], np.nan).fillna(1e9)
+
+    # Convert categorical variables to numerical using one-hot encoding
+    data = pd.get_dummies(data, columns=["categorical_column"])
+
+    # Select numerical columns for preprocessing
+    numerical_columns = data.select_dtypes(include=["float64"]).values
+
+    # Standardize the numerical features
+    scaler = StandardScaler()
+    numerical_columns = scaler.fit_transform(numerical_columns)
+
+    return numerical_columns
+
+def find_best_contamination_lof(data, random_state=42):
+    numerical_columns = preprocess_data(data)
+
+    # Create the LOF model
+    model = LocalOutlierFactor(n_neighbors=20, novelty=True)
+
+    # Fit the model
+    model.fit(numerical_columns)
+
+    # Predict the anomaly score (the lower, the more abnormal)
+    anomaly_scores = -model.decision_function(numerical_columns)
+
+    # Sort the anomaly scores in ascending order
+    sorted_scores = np.sort(anomaly_scores)
+
+    # Find the index corresponding to the desired percentage of anomalies (e.g., 5%)
+    desired_percentile_index = int(0.05 * len(sorted_scores))
+
+    # Get the contamination value corresponding to the desired percentile
+    best_contamination = sorted_scores[desired_percentile_index]
+
+    # Clip the best_contamination value to ensure it falls within the valid range (0, 0.5]
+    best_contamination = np.clip(best_contamination, 0.001, 0.5)
+
+    return best_contamination
+
+def detect_anomalies_lof(data):
+    # Find the best contamination value dynamically
+    best_contamination = find_best_contamination_lof(data, random_state=42)
+
+    numerical_columns = preprocess_data(data)
+
+    # Create the Local Outlier Factor model
+    model = LocalOutlierFactor(contamination=best_contamination)
+
+    # Fit the model and predict anomaly labels
+    predictions = model.fit_predict(numerical_columns)
+
+    # Anomalies are considered data points with label -1 (anomaly)
+    anomalies = predictions == -1
+
+    # Add the Anomaly column to the original dataframe
+    data["Anomaly"] = anomalies
+
+    return data
+
+if __name__ == "__main__":
+    # Sample data creation (replace this with your actual data loading)
+    data = pd.DataFrame(...)  # Your dataset here
+
+    # Detect anomalies using LOF with dynamically estimated contamination value
+    data_with_anomalies = detect_anomalies_lof(data)
+
+    print(data_with_anomalies)
+
+
+
+
+
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+def preprocess_data(data, max_missing_percent=0.2, max_cardinality=100):
+    # Remove variables with high missing value percentage
+    data = data.dropna(thresh=int(max_missing_percent * len(data)), axis=1)
+
+    # Handle infinity values (replace with a large finite value)
+    data = data.replace([np.inf, -np.inf], np.nan).fillna(1e9)
+
+    # Convert categorical variables to numerical using one-hot encoding
+    high_cardinality_cols = [col for col in data.select_dtypes(include=["object"]).columns if data[col].nunique() > max_cardinality]
+    data = pd.get_dummies(data, columns=high_cardinality_cols)
+
+    # Select numerical columns for preprocessing
+    numerical_columns = data.select_dtypes(include=["float64"]).values
+
+    # Standardize the numerical features
+    scaler = StandardScaler()
+    numerical_columns = scaler.fit_transform(numerical_columns)
+
+    return numerical_columns
+
+# Rest of the code remains the same
+
