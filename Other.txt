@@ -107,3 +107,44 @@ def preprocess_data(data, important_features, categorical_features, boolean_feat
 
 
 
+
+
+
+
+import pandas as pd
+import numpy as np
+
+# Create a sample DataFrame
+data = {
+    'col1': ['True', 'False', 'True', 'False'],
+    'col2': ['A', 'B', 'C', 'A'],
+    'col3': ['1.2', '3.4', '5.6', '7.8'],
+    'col4': ['9', '10', '11', '12']
+}
+
+df = pd.DataFrame(data)
+
+# Identify boolean columns based on unique values
+boolean_columns = []
+for col in df.columns:
+    unique_values = df[col].unique()
+    if len(unique_values) == 2 and all(val in ['True', 'False'] for val in unique_values):
+        boolean_columns.append(col)
+
+# Identify categorical columns (excluding boolean)
+categorical_columns = df.select_dtypes(include=['object', 'category']).columns.tolist()
+categorical_columns = [col for col in categorical_columns if col not in boolean_columns]
+
+# Identify columns with numeric values within object columns
+numeric_columns = []
+for col in categorical_columns:
+    try:
+        if np.issubdtype(pd.to_numeric(df[col], errors='coerce').dtype, np.number):
+            numeric_columns.append(col)
+    except ValueError:
+        pass
+
+print("Boolean columns:", boolean_columns)
+print("Categorical columns:", categorical_columns)
+print("Numeric columns within object columns:", numeric_columns)
+
