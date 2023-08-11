@@ -1,0 +1,19 @@
+import pandas as pd
+
+# Create a sample DataFrame
+data = {
+    'col1': [True, False, True, False],
+    'col2': ['A', 'B', 'C', 'A']
+}
+
+df = pd.DataFrame(data)
+
+# Identify boolean columns
+boolean_columns = df.select_dtypes(include=['bool']).columns.tolist()
+
+# Identify categorical columns (excluding boolean)
+categorical_columns = df.select_dtypes(include=['object', 'category']).columns.tolist()
+categorical_columns = [col for col in categorical_columns if col not in boolean_columns]
+
+print("Boolean columns:", boolean_columns)
+print("Categorical columns:", categorical_columns)
