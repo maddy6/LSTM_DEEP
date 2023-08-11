@@ -146,3 +146,53 @@ print(data)
 
 
 
+
+
+
+
+
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+
+def preprocess_data(data, important_features, categorical_features, boolean_features, other_features,
+                    important_weightage=0.7, other_weightage=0.3):
+    # Handling missing values
+    data.fillna(0, inplace=True)  # Replace missing values with 0 or customize
+    
+    # Separate different types of features
+    important_data = data[important_features]
+    categorical_data = data[categorical_features]
+    boolean_data = data[boolean_features]
+    other_data = data[other_features]
+    
+    # Apply label encoding to categorical variables
+    label_encoder = LabelEncoder()
+    encoded_categorical_data = categorical_data.apply(label_encoder.fit_transform)
+    
+    # Combine encoded categorical, boolean, and other features
+    combined_features = pd.concat([important_data, encoded_categorical_data, boolean_data, other_data], axis=1)
+    
+    # Assign weightage to important features and other features
+    weighted_data = (combined_features[important_features] * important_weightage) + \
+                    (combined_features[other_features] * other_weightage)
+    
+    # Preprocess and scale the data
+    scaler = StandardScaler()
+    scaled_data = scaler.fit_transform(weighted_data)
+    
+    return scaled_data
+
+# Example usage
+data = pd.DataFrame(...)  # Your dataset here
+
+important_features = ["important_feature_1", "important_feature_2"]
+categorical_features = ["categorical_feature_1", "categorical_feature_2"]
+boolean_features = ["boolean_feature_1", "boolean_feature_2"]
+other_features = ["other_feature_1", "other_feature_2"]
+
+preprocessed_data = preprocess_data(data, important_features, categorical_features, boolean_features, other_features)
+print(preprocessed_data)
+
+
+
