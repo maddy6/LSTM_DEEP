@@ -1,0 +1,111 @@
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import Ridge
+import pandas as pd
+import numpy as np
+
+# Load or generate your data
+data = pd.DataFrame(...)  # Your dataset here
+
+# Identify important features based on business logic
+Anomaly Detection with Variable Weightage:
+
+
+
+important_features = data[["important_feature_1", "important_feature_2"]]
+
+# Create advanced polynomial features with regularization
+poly = PolynomialFeatures(degree=2)
+transformed_features = poly.fit_transform(important_features)
+ridge = Ridge(alpha=0.01)
+transformed_features = ridge.fit_transform(transformed_features, data["target_column"])
+
+# Scale the transformed features
+scaled_features = StandardScaler().fit_transform(transformed_features)
+
+# Assign weightage to important features
+important_weightage = 0.7
+other_weightage = 0.3
+weighted_scaled_features = (scaled_features * important_weightage) + (data[["other_feature_1", "other_feature_2"]] * other_weightage)
+
+# Build and fit the Isolation Forest model
+model = IsolationForest(contamination=0.05)  # Adjust contamination as needed
+model.fit(weighted_scaled_features)
+
+# Predict anomalies
+anomalies = model.predict(weighted_scaled_features) == -1
+
+# Add the anomaly predictions to the original DataFrame
+data["anomaly"] = anomalies
+
+# Print or analyze the results
+print(data)
+
+
+
+
+
+
+
+
+
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+
+# Load or generate your data
+data = pd.DataFrame(...)  # Your dataset here
+
+# Identify important features based on business logic
+important_features = data[["important_feature_1", "important_feature_2"]]
+categorical_and_boolean_features = data[["categorical_or_boolean_feature_1", "categorical_or_boolean_feature_2"]]
+other_features = data[["other_feature_1", "other_feature_2"]]
+
+# Apply label encoding to categorical variables
+label_encoder = LabelEncoder()
+encoded_categorical_and_boolean = categorical_and_boolean_features.apply(label_encoder.fit_transform)
+
+# Combine encoded categorical/boolean, and other features
+combined_features = pd.concat([important_features, encoded_categorical_and_boolean, other_features], axis=1)
+
+# Split data into train and test sets
+X_train, X_test = train_test_split(combined_features, test_size=0.2, random_state=42)
+
+# Preprocess and scale the data
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Assign weightage to important features and other features
+important_weightage = 0.7
+other_weightage = 0.3
+weighted_X_train = (X_train_scaled * important_weightage) + (X_train_scaled * other_weightage)
+weighted_X_test = (X_test_scaled * important_weightage) + (X_test_scaled * other_weightage)
+
+# Build and fit the Isolation Forest model on the train set
+model = IsolationForest(contamination=0.05)  # Initialize with a reasonable contamination value
+model.fit(weighted_X_train)
+
+# Predict anomaly scores on the test set
+anomaly_scores = -model.score_samples(weighted_X_test)  # Negative scores for easier thresholding
+
+# Dynamically determine the anomaly threshold
+anomaly_fraction = 0.05  # Adjust as needed
+threshold = np.percentile(anomaly_scores, 100 * (1 - anomaly_fraction))
+
+# Predict anomalies based on the threshold
+anomalies = anomaly_scores > threshold
+
+# Add the anomaly predictions to the original DataFrame
+test_indices = X_test.index
+anomaly_predictions = pd.Series(anomalies, index=test_indices, name="anomaly")
+data = data.merge(anomaly_predictions, left_index=True, right_index=True, how="left")
+
+# Print or analyze the results
+print(data)
+
+
+
+

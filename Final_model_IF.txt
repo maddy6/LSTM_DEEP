@@ -1,0 +1,148 @@
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.neighbors import NearestNeighbors
+from sklearn.metrics import roc_auc_score
+import matplotlib.pyplot as plt
+
+# Load or generate your data
+data = pd.DataFrame(...)  # Your dataset here
+
+# Identify important features based on business logic
+important_features = data[["important_feature_1", "important_feature_2"]]
+categorical_and_boolean_features = data[["categorical_or_boolean_feature_1", "categorical_or_boolean_feature_2"]]
+other_features = data[["other_feature_1", "other_feature_2"]]
+
+# Apply label encoding to categorical variables
+label_encoder = LabelEncoder()
+encoded_categorical_and_boolean = categorical_and_boolean_features.apply(label_encoder.fit_transform)
+
+# Combine encoded categorical/boolean, and other features
+combined_features = pd.concat([important_features, encoded_categorical_and_boolean, other_features], axis=1)
+
+# Split data into train and test sets
+X_train, X_test = train_test_split(combined_features, test_size=0.2, random_state=42)
+
+# Preprocess and scale the data
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Assign weightage to important features and other features
+important_weightage = 0.7
+other_weightage = 0.3
+weighted_X_train = (X_train_scaled * important_weightage) + (X_train_scaled * other_weightage)
+weighted_X_test = (X_test_scaled * important_weightage) + (X_test_scaled * other_weightage)
+
+# Method 1: Determine optimal anomaly percentage using K-nearest neighbors (KNN) elbow point
+n_neighbors = 5  # Number of neighbors for KNN
+knn_model = NearestNeighbors(n_neighbors=n_neighbors)
+knn_model.fit(weighted_X_train)
+knn_distances, _ = knn_model.kneighbors(weighted_X_train)
+avg_knn_distances = np.mean(knn_distances, axis=1)
+elbow_index = np.argmin(np.diff(np.sort(avg_knn_distances)))
+optimal_anomaly_percentage_knn = (elbow_index + 1) / len(avg_knn_distances)
+
+# Method 2: Determine optimal anomaly percentage using ROC curve
+best_auc = -1
+optimal_anomaly_percentage_roc = 0.05  # Default
+for anomaly_percentage in np.arange(0.01, 0.5, 0.01):
+    model = IsolationForest(contamination=anomaly_percentage)
+    model.fit(weighted_X_train)
+    anomalies = model.predict(weighted_X_train) == -1
+    auc = roc_auc_score(anomalies, -model.decision_function(weighted_X_train))
+    if auc > best_auc:
+        best_auc = auc
+        optimal_anomaly_percentage_roc = anomaly_percentage
+
+# Choose the optimal anomaly percentage based on the better of the two methods
+optimal_anomaly_percentage = max(optimal_anomaly_percentage_knn, optimal_anomaly_percentage_roc)
+
+# Build and fit the Isolation Forest model on the train set with the optimal anomaly percentage
+model = IsolationForest(contamination=optimal_anomaly_percentage)
+model.fit(weighted_X_train)
+
+# Predict anomalies on the test set
+anomalies = model.predict(weighted_X_test) == -1
+
+# Add the anomaly predictions to the original DataFrame
+test_indices = X_test.index
+anomaly_predictions = pd.Series(anomalies, index=test_indices, name="anomaly")
+data = data.merge(anomaly_predictions, left_index=True, right_index=True, how="left")
+
+# Print or analyze the results
+print(data)
+
+
+
+
+
+
+
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+from sklearn.model_selection import train_test_split, cross_val_predict
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import roc_auc_score
+import matplotlib.pyplot as plt
+
+# Load or generate your data
+data = pd.DataFrame(...)  # Your dataset here
+
+# Identify important features based on business logic
+important_features = data[["important_feature_1", "important_feature_2"]]
+categorical_and_boolean_features = data[["categorical_or_boolean_feature_1", "categorical_or_boolean_feature_2"]]
+other_features = data[["other_feature_1", "other_feature_2"]]
+
+# Apply label encoding to categorical variables
+label_encoder = LabelEncoder()
+encoded_categorical_and_boolean = categorical_and_boolean_features.apply(label_encoder.fit_transform)
+
+# Combine encoded categorical/boolean, and other features
+combined_features = pd.concat([important_features, encoded_categorical_and_boolean, other_features], axis=1)
+
+# Split data into train and test sets
+X_train, X_test = train_test_split(combined_features, test_size=0.2, random_state=42)
+
+# Preprocess and scale the data
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Assign weightage to important features and other features
+important_weightage = 0.7
+other_weightage = 0.3
+weighted_X_train = (X_train_scaled * important_weightage) + (X_train_scaled * other_weightage)
+weighted_X_test = (X_test_scaled * important_weightage) + (X_test_scaled * other_weightage)
+
+# Perform cross-validation to determine optimal anomaly percentage
+best_auc = -1
+optimal_anomaly_percentage = 0.05  # Default
+for anomaly_percentage in np.arange(0.01, 0.5, 0.01):
+    model = IsolationForest(contamination=anomaly_percentage)
+    predicted_anomalies = cross_val_predict(model, weighted_X_train, cv=5, method='predict')
+    auc = roc_auc_score(predicted_anomalies, -model.decision_function(weighted_X_train))
+    if auc > best_auc:
+        best_auc = auc
+        optimal_anomaly_percentage = anomaly_percentage
+
+# Build and fit the Isolation Forest model on the train set with the optimal anomaly percentage
+model = IsolationForest(contamination=optimal_anomaly_percentage)
+model.fit(weighted_X_train)
+
+# Predict anomalies on the test set
+anomalies = model.predict(weighted_X_test) == -1
+
+# Add the anomaly predictions to the original DataFrame
+test_indices = X_test.index
+anomaly_predictions = pd.Series(anomalies, index=test_indices, name="anomaly")
+data = data.merge(anomaly_predictions, left_index=True, right_index=True, how="left")
+
+# Print or analyze the results
+print(data)
+
+
+
