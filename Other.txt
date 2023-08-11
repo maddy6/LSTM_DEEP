@@ -17,3 +17,49 @@ categorical_columns = [col for col in categorical_columns if col not in boolean_
 
 print("Boolean columns:", boolean_columns)
 print("Categorical columns:", categorical_columns)
+
+
+import pandas as pd
+
+# Create a sample DataFrame
+data = {
+    'col1': [True, False, True, False],
+    'col2': ['A', 'B', 'C', 'A']
+}
+
+df = pd.DataFrame(data)
+
+# Identify boolean columns based on unique values
+boolean_columns = []
+for col in df.columns:
+    unique_values = df[col].unique()
+    if len(unique_values) == 2 and all(isinstance(val, bool) for val in unique_values):
+        boolean_columns.append(col)
+
+print("Boolean columns:", boolean_columns)
+
+
+
+import pandas as pd
+
+# Create a sample DataFrame
+data = {
+    'col1': ['True', 'False', 'True', 'False'],
+    'col2': ['A', 'B', 'C', 'A']
+}
+
+df = pd.DataFrame(data)
+
+# Identify boolean columns based on unique values
+boolean_columns = []
+for col in df.columns:
+    unique_values = df[col].unique()
+    if len(unique_values) == 2 and all(val in ['True', 'False'] for val in unique_values):
+        boolean_columns.append(col)
+
+# Identify categorical columns (excluding boolean)
+categorical_columns = df.select_dtypes(include=['object', 'category']).columns.tolist()
+categorical_columns = [col for col in categorical_columns if col not in boolean_columns]
+
+print("Boolean columns:", boolean_columns)
+print("Categorical columns:", categorical_columns)
