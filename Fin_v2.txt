@@ -1,0 +1,84 @@
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+from sklearn.model_selection import cross_val_predict
+from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+
+def preprocess_data(data, important_features, other_features, 
+                    important_categorical_features, important_numerical_features, important_boolean_features,
+                    other_categorical_features, other_numerical_features, other_boolean_features,
+                    important_weightage=0.7, other_weightage=0.3):
+    data.fillna(0, inplace=True)  # Replace missing values with 0 or customize
+    
+    important_data = data[important_features]
+    
+    # Handle categorical features in important_data
+    encoded_important_categorical_data = pd.DataFrame()  # Create an empty DataFrame to store encoded features
+    for feature in important_categorical_features:
+        encoded_feature = important_data[feature].astype(str)
+        label_encoder = LabelEncoder()
+        encoded_feature = label_encoder.fit_transform(encoded_feature)
+        encoded_important_categorical_data[feature] = encoded_feature
+    
+    # Handle boolean features in important_data
+    for feature in important_boolean_features:
+        important_data[feature] = important_data[feature].astype(int)
+    
+    # Handle numeric features in important_data
+    for feature in important_numerical_features:
+        important_data[feature].fillna(0, inplace=True)  # Replace with custom value if needed
+    
+    other_data = data[other_features]
+    
+    # Handle categorical features in other_data
+    encoded_other_categorical_data = pd.DataFrame()  # Create an empty DataFrame to store encoded features
+    for feature in other_categorical_features:
+        encoded_feature = other_data[feature].astype(str)
+        label_encoder = LabelEncoder()
+        encoded_feature = label_encoder.fit_transform(encoded_feature)
+        encoded_other_categorical_data[feature] = encoded_feature
+    
+    # Handle boolean features in other_data
+    for feature in other_boolean_features:
+        other_data[feature] = other_data[feature].astype(int)
+    
+    # Handle numeric features in other_data
+    for feature in other_numerical_features:
+        other_data[feature].fillna(0, inplace=True)  # Replace with custom value if needed
+    
+    combined_features = pd.concat([important_data, encoded_important_categorical_data, 
+                                   important_data[important_boolean_features], other_data, encoded_other_categorical_data,
+                                   other_data[other_boolean_features]], axis=1)
+    
+    scaler = StandardScaler()
+    scaled_data = scaler.fit_transform(combined_features)
+    
+    weighted_data = (scaled_data[:, :len(important_features)] * important_weightage) + \
+                    (scaled_data[:, len(important_features):] * other_weightage)
+    
+    return weighted_data
+
+def detect_anomalies_iforest(data, contamination=0.05, random_seed=42):
+    model = IsolationForest(contamination=contamination, random_state=random_seed)
+    model.fit(data)
+    anomalies = model.predict(data) == -1
+    return anomalies
+
+# Example usage
+data = pd.read_csv('your_data.csv')  # Load your data
+
+# Define your features and preprocessing details
+# ... (same as previous code)
+
+preprocessed_data = preprocess_data(data, 
+                                   important_features, other_features, 
+                                   important_categorical_features, important_numerical_features, important_boolean_features,
+                                   other_categorical_features, other_numerical_features, other_boolean_features,
+                                   important_weightage=0.7, other_weightage=0.3)
+
+anomalies = detect_anomalies_iforest(preprocessed_data, contamination=0.05, random_seed=42)
+
+# Print the indices of anomaly rows
+anomaly_indices = np.where(anomalies)[0]
+print("Anomaly indices:", anomaly_indices)
