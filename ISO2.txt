@@ -1,0 +1,53 @@
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import roc_auc_score
+
+# Load or generate your data
+data = pd.read_csv('your_data.csv')  # Replace with your data file
+
+# Define your features and target
+important_features = ["important_feature_1", "important_feature_2"]
+other_features = ["other_feature_1", "other_feature_2"]
+
+# Preprocess the data
+# ... Your preprocessing logic here ...
+
+# Combine features for training
+all_features = important_features + other_features
+preprocessed_data = data[all_features]
+
+# Set up the parameter grid for grid search
+param_grid = {'contamination': np.arange(0.01, 0.5, 0.01)}
+
+# Create an instance of IsolationForest
+model = IsolationForest(random_state=42)
+
+# Perform grid search to find the optimal anomaly percentage
+grid_search = GridSearchCV(estimator=model, param_grid=param_grid, scoring='roc_auc', cv=5)
+grid_search.fit(preprocessed_data)
+
+# Get the best parameter (optimal anomaly percentage) from grid search
+optimal_anomaly_percentage = grid_search.best_params_['contamination']
+
+# Fit the Isolation Forest model with the optimal anomaly percentage
+best_model = IsolationForest(contamination=optimal_anomaly_percentage, random_state=42)
+best_model.fit(preprocessed_data)
+
+# Predict anomaly scores using the best model
+anomaly_scores = best_model.decision_function(preprocessed_data)
+
+# Add the anomaly scores and optimal anomaly percentage to the original DataFrame
+data['anomaly_score'] = anomaly_scores
+data['optimal_anomaly_percentage'] = optimal_anomaly_percentage
+
+# Determine whether each data point is an anomaly or not
+data['anomaly'] = data['anomaly_score'] < 0  # You can adjust the threshold as needed
+
+# Print the optimal anomaly percentage
+print("Optimal Anomaly Percentage:", optimal_anomaly_percentage)
+
+# Display the updated DataFrame
+print(data)
