@@ -38,3 +38,61 @@ column_types = identify_column_types(df)
 print("Boolean columns:", column_types["boolean_columns"])
 print("Categorical columns:", column_types["categorical_columns"])
 print("Numeric columns:", column_types["numeric_columns"])
+
+
+
+
+
+
+def preprocess_data(data, important_features, other_features, important_weightage=0.7, other_weightage=0.3):
+    data.fillna(0, inplace=True)  # Replace missing values with 0 or customize
+    
+    important_data = data[important_features]
+    
+    # Manually inspect and convert columns in important_data
+    for feature in important_data.columns:
+        unique_values = important_data[feature].unique()
+        
+        # Check for boolean-like columns (with 3 possible values)
+        if set(unique_values) == {0, 1, True, False, np.nan}:
+            important_data[feature] = important_data[feature].apply(lambda x: True if x is True else False if x is False else np.nan)
+        
+        # Check for categorical-like columns
+        elif len(unique_values) < len(important_data) / 2:
+            label_encoder = LabelEncoder()
+            important_data[feature] = label_encoder.fit_transform(important_data[feature])
+        
+        # Handle numeric columns
+        else:
+            important_data[feature] = important_data[feature].apply(pd.to_numeric, errors='coerce')
+    
+    other_data = data[other_features]
+    
+    # Manually inspect and convert columns in other_data
+    for feature in other_data.columns:
+        unique_values = other_data[feature].unique()
+        
+        # Check for boolean-like columns (with 3 possible values)
+        if set(unique_values) == {0, 1, True, False, np.nan}:
+            other_data[feature] = other_data[feature].apply(lambda x: True if x is True else False if x is False else np.nan)
+        
+        # Check for categorical-like columns
+        elif len(unique_values) < len(other_data) / 2:
+            label_encoder = LabelEncoder()
+            other_data[feature] = label_encoder.fit_transform(other_data[feature])
+        
+        # Handle numeric columns
+        else:
+            other_data[feature] = other_data[feature].apply(pd.to_numeric, errors='coerce')
+    
+    combined_features = pd.concat([important_data, other_data], axis=1)
+    
+    scaler = StandardScaler()
+    scaled_data = scaler.fit_transform(combined_features)
+    
+    weighted_data = (scaled_data[:, :len(important_features)] * important_weightage) + \
+                    (scaled_data[:, len(important_features):] * other_weightage)
+    
+    return weighted_data
+
+
