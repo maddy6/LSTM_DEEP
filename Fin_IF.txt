@@ -13,6 +13,7 @@ def preprocess_data(data, important_features, other_features,
     
     # Handle categorical features in important_data
     for feature in important_categorical_features:
+        important_data[feature] = important_data[feature].astype(str)  # Convert to object type
         label_encoder = LabelEncoder()
         important_data[feature] = label_encoder.fit_transform(important_data[feature])
     
@@ -28,6 +29,7 @@ def preprocess_data(data, important_features, other_features,
     
     # Handle categorical features in other_data
     for feature in other_categorical_features:
+        other_data[feature] = other_data[feature].astype(str)  # Convert to object type
         label_encoder = LabelEncoder()
         other_data[feature] = label_encoder.fit_transform(other_data[feature])
     
