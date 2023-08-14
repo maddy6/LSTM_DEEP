@@ -82,3 +82,11 @@ anomalies = detect_anomalies_iforest(preprocessed_data, contamination=0.05, rand
 # Print the indices of anomaly rows
 anomaly_indices = np.where(anomalies)[0]
 print("Anomaly indices:", anomaly_indices)
+
+
+
+
+weighted_data = np.concatenate([(scaled_data[:, :len(important_features)] * important_weightage),
+                                (scaled_data[:, len(important_features):] * other_weightage)], axis=1)
+
+
