@@ -1,0 +1,64 @@
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+from sklearn.model_selection import cross_val_predict
+from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+
+def preprocess_data(data, important_features, categorical_features, boolean_features, other_features,
+                    important_weightage=0.7, other_weightage=0.3):
+    data.fillna(0, inplace=True)  # Replace missing values with 0 or customize
+    
+    important_data = data[important_features]
+    categorical_data = data[categorical_features]
+    boolean_data = data[boolean_features]
+    other_data = data[other_features]
+    
+    label_encoder = LabelEncoder()
+    encoded_categorical_data = categorical_data.apply(label_encoder.fit_transform)
+    
+    combined_features = pd.concat([important_data, encoded_categorical_data, boolean_data, other_data], axis=1)
+    
+    scaler = StandardScaler()
+    scaled_data = scaler.fit_transform(combined_features)
+    
+    weighted_data = (scaled_data[:, :len(important_features)] * important_weightage) + \
+                    (scaled_data[:, len(important_features):] * other_weightage)
+    
+    return weighted_data
+
+# Load or generate your data
+data = pd.DataFrame(...)  # Your dataset here
+
+important_features = ["important_feature_1", "important_feature_2"]
+categorical_features = ["categorical_feature_1", "categorical_feature_2"]
+boolean_features = ["boolean_feature_1", "boolean_feature_2"]
+other_features = ["other_feature_1", "other_feature_2"]
+
+# Preprocess the data
+preprocessed_data = preprocess_data(data, important_features, categorical_features, boolean_features, other_features,
+                                    important_weightage=0.7, other_weightage=0.3)
+
+# Perform cross-validation to determine optimal anomaly percentage
+best_auc = -1
+optimal_anomaly_percentage = 0.05  # Default
+for anomaly_percentage in np.arange(0.01, 0.5, 0.01):
+    model = IsolationForest(contamination=anomaly_percentage)
+    predicted_anomalies = cross_val_predict(model, preprocessed_data, cv=5, method='predict')
+    auc = roc_auc_score(predicted_anomalies, -model.decision_function(preprocessed_data))
+    if auc > best_auc:
+        best_auc = auc
+        optimal_anomaly_percentage = anomaly_percentage
+
+# Build and fit the Isolation Forest model on the data with the optimal anomaly percentage
+model = IsolationForest(contamination=optimal_anomaly_percentage)
+model.fit(preprocessed_data)
+
+# Predict anomalies on the data
+anomalies = model.predict(preprocessed_data) == -1
+
+# Add the anomaly predictions to the original DataFrame
+data["anomaly"] = anomalies
+
+# Print or analyze the results
+print(data)
