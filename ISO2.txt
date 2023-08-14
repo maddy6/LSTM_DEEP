@@ -51,3 +51,48 @@ print("Optimal Anomaly Percentage:", optimal_anomaly_percentage)
 
 # Display the updated DataFrame
 print(data)
+
+
+
+
+
+from sklearn.preprocessing import PolynomialFeatures
+
+# Assuming 'data' is your preprocessed DataFrame
+poly = PolynomialFeatures(degree=2)
+poly_features = poly.fit_transform(data[important_features])  # Replace with your features
+
+# Create a new DataFrame with the polynomial features
+poly_df = pd.DataFrame(poly_features, columns=poly.get_feature_names(important_features))
+
+
+
+
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+
+# Assuming 'data' is your preprocessed DataFrame
+scaler = StandardScaler()
+scaled_data = scaler.fit_transform(data[important_features])  # Replace with your features
+
+pca = PCA(n_components=2)
+pca_features = pca.fit_transform(scaled_data)
+
+# Create a new DataFrame with the PCA features
+pca_df = pd.DataFrame(pca_features, columns=['PCA_1', 'PCA_2'])
+
+
+
+from sklearn.decomposition import KernelPCA
+from sklearn.preprocessing import StandardScaler
+
+# Assuming 'data' is your preprocessed DataFrame
+scaler = StandardScaler()
+scaled_data = scaler.fit_transform(data[important_features])  # Replace with your features
+
+kernel_pca = KernelPCA(n_components=2, kernel='rbf')
+kernel_pca_features = kernel_pca.fit_transform(scaled_data)
+
+# Create a new DataFrame with the KernelPCA features
+kernel_pca_df = pd.DataFrame(kernel_pca_features, columns=['KernelPCA_1', 'KernelPCA_2'])
+
