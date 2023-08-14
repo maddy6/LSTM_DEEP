@@ -80,3 +80,20 @@ anomalies = detect_anomalies_iforest(preprocessed_data, contamination=0.05, rand
 # Print the indices of anomaly rows
 anomaly_indices = np.where(anomalies)[0]
 print("Anomaly indices:", anomaly_indices)
+
+
+
+
+important_data = data[important_features]
+
+# Handle categorical features in important_data
+encoded_categorical_data = pd.DataFrame()  # Create an empty DataFrame to store encoded features
+for feature in important_categorical_features:
+    if feature in important_features:  # Ensure the feature is present in important_features
+        encoded_feature = important_data[feature].astype(str)
+        label_encoder = LabelEncoder()
+        encoded_feature = label_encoder.fit_transform(encoded_feature)
+        encoded_categorical_data[feature] = encoded_feature
+
+important_data.drop(columns=important_categorical_features, inplace=True)  # Drop the original categorical columns
+important_data = pd.concat([important_data, encoded_categorical_data], axis=1)  # Concatenate encoded categorical features
