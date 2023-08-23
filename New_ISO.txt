@@ -1,0 +1,32 @@
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+# Sample dataset
+data = pd.DataFrame({
+    'maturity_value': [100, 50, 10, 500, 10, 500, None, 0],
+    'category': ['S.A', 'D.A', 'J.K', 'J.K', 'S.A', 'I.T', 'D.A', 'J.K'],
+    'prod_category': ['S.A', 'D.A', 'R.Y', 'S.A', 'R.Y', 'D.A', 'R.Y', 'I.T'],
+    'amount': [100, 150, 100, 200, 50, 300, 120, 0]
+})
+
+# Binary rule outcomes (0 or 1) for each rule
+data['Rule1_Outcome'] = [1, 0, 1, 1, 1, 0, 0, 1]
+data['Rule2_Outcome'] = [0, 0, 0, 0, 0, 0, 0, 0]
+data['Rule3_Outcome'] = [1, 0, 1, 0, 1, 0, 0, 0]
+data['Rule4_Outcome'] = [0, 0, 0, 0, 0, 0, 0, 0]
+data['Rule5_Outcome'] = [1, 0, 1, 0, 1, 0, 0, 0]
+data['Rule6_Outcome'] = [1, 0, 1, 0, 1, 0, 0, 0]
+
+# Create a model to predict rule outcomes based on features
+rule_features = data[['maturity_value', 'category', 'prod_category', 'amount']]
+rule_names = ['Rule1', 'Rule2', 'Rule3', 'Rule4', 'Rule5', 'Rule6']
+
+for rule_name in rule_names:
+    model = LogisticRegression()
+    model.fit(rule_features, data[f'{rule_name}_Outcome'])
+
+    # Predicting rule probabilities using the model
+    data[f'{rule_name}_Probability'] = model.predict_proba(rule_features)[:, 1]
+
+# Display the final dataset with added features
+print(data)
