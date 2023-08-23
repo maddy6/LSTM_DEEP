@@ -30,3 +30,8 @@ for rule_name in rule_names:
 
 # Display the final dataset with added features
 print(data)
+
+
+scaler = MinMaxScaler()
+data['maturity_value_scaled'] = scaler.fit_transform(data['maturity_value'].values.reshape(-1, 1))
+
