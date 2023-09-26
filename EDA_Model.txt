@@ -61,6 +61,117 @@ for num_features in range(1, len(numerical_features) + 1):
 
             # Generate rules for the current feature combination with dynamic cutoffs
             current_rules = []
+            categorical_rule_added = set()  # To track which categorical variables have been added
+            for feature in feature_combination:
+                if feature in numerical_features:
+                    cutoff = cutoffs.get(feature, 0)  # Get dynamic cutoff or default to 0
+                    rule_condition = f"({feature} > {cutoff})"
+                else:
+                    variable_name = feature
+                    categories = df[feature].unique()
+                    if feature in categorical_features and variable_name not in categorical_rule_added:
+                        categorical_rule_added.add(variable_name)
+                        # Include only a single category in the rule
+                        rule_condition = f"({variable_name} == '{categories[0]}')"
+                    else:
+                        # Include all categories in the rule
+                        category_combinations = generate_categorical_combinations(categories, variable_name)
+                        rule_condition = ' AND '.join(category_combinations)
+                current_rules.append(rule_condition)
+
+            # Combine the rules into a single rule for the current feature combination
+            combined_rule = " AND ".join(current_rules)
+
+            # Add the rule to the list
+            rule = {
+                'Features': ', '.join(feature_combination),
+                'Num Anomalies Captured': num_anomalies,
+                'Rule Condition': combined_rule
+            }
+            all_rules.append(rule)
+
+# Sort all the rules by the number of anomalies detected in descending order
+all_rules.sort(key=lambda x: x['Num Anomalies Captured'], reverse=True)
+
+# Print the top 20 rules with anomalies counts in descending order
+for i, rule in enumerate(all_rules[:max_rules]):
+    num_anomalies = rule['Num Anomalies Captured']
+    print(f"Rule {i + 1}:")
+    print(f"Features: {rule['Features']}")
+    print(f"Num Anomalies Captured: {num_anomalies}")
+    print(f"Rule Condition: {rule['Rule Condition']}\n")
+
+
+
+
+
+
+
+
+
+import pandas as pd
+import itertools
+
+# Create the dataframe
+data = {
+    'Age': [25, 30, 22, 35, 28, 40, 45, 27, 33, 29] * 5,
+    'Income': [50000, 60000, 45000, 70000, 55000, 80000, 90000, 52000, 65000, 59000] * 5,
+    'Education': ['High', 'Low', 'Medium', 'Medium', 'High', 'Low', 'Medium', 'High', 'Low', 'Medium'] * 5,
+    'Gender': ['Male', 'Female', 'Male', 'Female', 'Male', 'Female', 'Male', 'Female', 'Male', 'Female'] * 5,
+    'Anomaly': [False, True, False, True, True, False, True, False, True, True] * 5
+}
+df = pd.DataFrame(data)
+
+# Initialize variables
+all_rules = []
+max_rules = 20  # Generate more rules
+
+# Define which numerical features should be greater than while creating combinations
+numerical_features_greater = ['Income']
+
+# Generate combinations of features, including both numerical and categorical variables
+numerical_features = ['Age', 'Income']
+categorical_features = ['Education', 'Gender']
+
+# Helper function to generate all combinations of AND and OR conditions for categorical variables
+def generate_categorical_combinations(categories, variable_name):
+    combinations = []
+    # Generate all possible OR conditions with one unique value for each categorical variable
+    for category in categories:
+        combinations.append(f"({variable_name} == '{category}')")
+
+    # Generate all possible AND conditions by adding ' AND ' between OR conditions
+    and_condition = ' AND '.join(combinations)
+    combinations.append(and_condition)
+    return combinations
+
+for num_features in range(1, len(numerical_features) + 1):
+    for cat_features in itertools.combinations(categorical_features, num_features):
+        feature_combination = list(cat_features) + numerical_features
+
+        # Check if the combination is valid (Income should be greater)
+        if all(feature in feature_combination for feature in numerical_features_greater):
+            # Apply the combination of features
+            subset_df = df[feature_combination + ['Anomaly']]
+
+            # Filter the subset where the rule is satisfying (Anomaly is True)
+            satisfying_subset = subset_df[subset_df['Anomaly']]
+
+            # Calculate the number of anomalies in this subset
+            num_anomalies = satisfying_subset['Anomaly'].sum()
+
+            # Determine dynamic cutoffs for numerical features based on this subset
+            cutoffs = {}
+            for feature in numerical_features:
+                if feature in numerical_features_greater:
+                    # Use the average value where anomalies are present
+                    cutoff = satisfying_subset[feature].mean()
+                else:
+                    cutoff = 0  # Default cutoff for other numerical features
+                cutoffs[feature] = cutoff
+
+            # Generate rules for the current feature combination with dynamic cutoffs
+            current_rules = []
             for feature in feature_combination:
                 if feature in numerical_features:
                     cutoff = cutoffs.get(feature, 0)  # Get dynamic cutoff or default to 0
